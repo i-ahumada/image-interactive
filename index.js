@@ -19,40 +19,41 @@ function addSignalStyles(signal, attr) {
     signal.style.transform = attr.shape === "rhombus"? "rotate(67.5deg) skewX(45deg) scaleY(cos(45deg))": "";
     // position
     signal.style.position = "absolute";
-    signal.style.left = attr?.coords[0] + "px";
-    signal.style.top = attr?.coords[1] + "px";
+    signal.style.left = attr?.coords[0] + "%";
+    signal.style.top = attr?.coords[1] + "%";
 }
 
 class SignalPopup extends HTMLElement {
     constructor() {
         super();
-        this.attachShadow({mode: "open"});
+        this.attachShadow({mode: "open"});        
         
-        // Signal
-        const signal = document.createElement("span");
-
-        signal.addEventListener("click", (e) => {this.togglePopup(e)});
-
         const attributeNames = ["shape", "border", "padding", "coords", "color", "image", "is360"];
         // Object attribute | attribute value pairs
         const attrPredefined = {
             color: "grey",
             border: "4px solid black",
             padding: "5",
-            coords: "0,0"
+            coords: "0,0",
+            image: "",
+            is360: "false"
         };
         // I was hoping this made passing parameters to functions easier
         const attr =
-            attributeNames.reduce((ac, attrName) =>
-                ({...ac, [attrName] : this.getAttribute(attrName) || attrPredefined[attrName]}),{});
+        attributeNames.reduce((ac, attrName) =>
+        ({...ac, [attrName] : this.getAttribute(attrName) || attrPredefined[attrName]}),{});
         attr.coords = attr.coords.split(",");
         
-        // SIGNAL styles
+        // SIGNAL
+        const signal = document.createElement("span");
+        signal.addEventListener("click", (e) => {this.togglePopup(e)});
         addSignalStyles(signal, attr);
 
 
-        // popup
-        const style = document.createElement("style");
+        // POPUP
+        const popup = document.createElement("div");
+        
+
         this.shadowRoot.append(signal); //popup
     }
 
@@ -63,7 +64,7 @@ class SignalPopup extends HTMLElement {
     togglePopup(e) {
         // Hide current
         currPopup?.classList.remove("active");
-        const relatedPopup = this.shadowRoot.querySelector(".popup");
+        const relatedPopup = this.shadowRoot.querySelector("div");
         console.log(currPopup, relatedPopup)
         // If its different signal show it
         if(relatedPopup !== currPopup) {
