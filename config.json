@@ -1,0 +1,6 @@
+{
+    "title": "Render Arquitectura",
+    "type": "equirectangular",
+    "panorama": "https://pannellum.org/images/alma.jpg",
+    "autoload": true
+}

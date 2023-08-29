@@ -1,61 +1,75 @@
+let currPopup = null;
+
 /**
- * @return {string}
- * @param {string} shape
- * @param {string} color
- * @param {boolean} border
- * @param {string} padding
+ * @returns {void}
+ * @param {HTMLSpanElement} signal 
+ * @param {Object} attr 
  */
-function defineSignalStyle(shape="square", color="white", border=true, padding="5") {
-    let style = `
-        span {
-            padding: ${padding}px;
-            background-color: ${color};
-    `
-    switch (shape) {
-        case "circle":
-            style += "border-radius=100%;"
-            break;
-        case "rhombus":
-            style += "transform: rotate(67.5deg) skewX(45deg) scaleY(cos(45deg));";
-            break;
-    }
-
-    style += "}";
-
-    return style;
+function addSignalStyles(signal, attr) {
+    // cursor
+    signal.style.cursor = "pointer";
+    // color
+    signal.style.backgroundColor = attr.color;
+    // padding
+    signal.style.padding = attr.padding + "px";
+    // border
+    signal.style.border = attr.border === "false"? "none": "4px solid black";
+    // shape
+    signal.style.borderRadius = attr.shape === "circle"? "100%":"";
+    signal.style.transform = attr.shape === "rhombus"? "rotate(67.5deg) skewX(45deg) scaleY(cos(45deg))": "";
+    // position
+    signal.style.position = "absolute";
+    signal.style.left = attr?.coords[0] + "px";
+    signal.style.top = attr?.coords[1] + "px";
 }
 
-class SignalPair extends HTMLElement {
+class SignalPopup extends HTMLElement {
     constructor() {
         super();
-        const attributeNames = this.getAttributeNames();
-        // Object attribute | attribute value pairs
-        // I was hoping this made passing parameters to functions easier
-        const attributeObject = attributeNames.reduce((ac, key) => ({...ac, key: this.getAttribute(key)}),{});
-
         this.attachShadow({mode: "open"});
-
+        
         // Signal
-        const signal = document.createElement("div");
-        this.addEventListener("click", (e) => {
-            // Hide current
-            const currPopup = this.querySelector(".active");
-            currPopup?.classList.remove("active");
+        const signal = document.createElement("span");
 
-            const relatedPopup = e.target.children[1];
-            // If its different signal show it
-            if(relatedPopup !== currPopup) {
-                relatedPopup.classList.add("active");
-            }
-        })
+        signal.addEventListener("click", (e) => {this.togglePopup(e)});
 
-        // style
-        const signalStyle = defineSignalStyle();
-        const style = document.createElement("style");
+        const attributeNames = ["shape", "border", "padding", "coords", "color", "image", "is360"];
+        // Object attribute | attribute value pairs
+        const attrPredefined = {
+            color: "grey",
+            border: "4px solid black",
+            padding: "5",
+            coords: "0,0"
+        };
+        // I was hoping this made passing parameters to functions easier
+        const attr =
+            attributeNames.reduce((ac, attrName) =>
+                ({...ac, [attrName] : this.getAttribute(attrName) || attrPredefined[attrName]}),{});
+        attr.coords = attr.coords.split(",");
+        
+        // SIGNAL styles
+        addSignalStyles(signal, attr);
+
 
         // popup
-        style.textContent = signalStyle + popupStyle;
-        this.shadowRoot.append(style, signal, popup);
+        const style = document.createElement("style");
+        this.shadowRoot.append(signal); //popup
+    }
+
+    /**
+     * @returns {void}
+     * @param {MouseEvent} e 
+     */
+    togglePopup(e) {
+        // Hide current
+        currPopup?.classList.remove("active");
+        const relatedPopup = this.shadowRoot.querySelector(".popup");
+        console.log(currPopup, relatedPopup)
+        // If its different signal show it
+        if(relatedPopup !== currPopup) {
+            relatedPopup?.classList.add("active");
+        }
+        currPopup = relatedPopup;
     }
 }
 
@@ -64,23 +78,28 @@ class ImageInteractive extends HTMLElement {
         super();
         this.attachShadow({mode: "open"});
 
-        // Image
-        const imageWrapper = document.createElement("img");
-        // Relative because signal pairs will have position absolute
-        imageWrapper.style.position = "relative";
 
-        imageWrapper.setAttribute("src", this.getAttribute("src"));
+        const imageWrapper = document.createElement("div");
+        imageWrapper.style.position = "relative";
+        imageWrapper.style.width = "fit-content";
+
+        // Image
+        const image = document.createElement("img");
+        // Relative because signal pairs will have position absolute
+        image.setAttribute("src", this.getAttribute("src"));
         // Set dimensions
         if (this.hasAttribute("width")) {
-            imageWrapper.setAttribute("width", this.getAttribute("width"));
+            image.setAttribute("width", this.getAttribute("width"));
         }
         if (this.hasAttribute("height")) {
-            imageWrapper.setAttribute("height", this.getAttribute("height"));
+            image.setAttribute("height", this.getAttribute("height"));
         }
+        const signals = Array.from(this.getElementsByTagName("signal-popup"));
 
+        imageWrapper.append(image, ...signals);
         this.shadowRoot.append(imageWrapper);
     }
 }
 
+customElements.define("signal-popup", SignalPopup);
 customElements.define("image-interactive", ImageInteractive);
-customElements.define("signal-pair", SignalPair);
