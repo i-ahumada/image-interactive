@@ -1,5 +1,24 @@
-let currPopup = null;
 
+let currPopup;
+/**
+ * @returns {Number}
+ * @param {HTMLElement} element 
+ * @param {Function} cb 
+ */
+function measure(element, cb) {
+    let elementVisibility = element.style.visibility, elementPosition = element.style.position;
+        
+    element.style.visibility = 'hidden';
+    element.style.position = 'absolute';
+    
+    document.body.appendChild(element);
+    const measuredValue = cb(element);
+    element.parentNode.removeChild(element);
+    
+    element.style.visibility = elementVisibility;
+    element.style.position = elementPosition;
+    return measuredValue;
+}
 /**
  * @returns {void}
  * @param {HTMLSpanElement} signal 
@@ -16,61 +35,168 @@ function addSignalStyles(signal, attr) {
     signal.style.border = attr.border === "false"? "none": "4px solid black";
     // shape
     signal.style.borderRadius = attr.shape === "circle"? "100%":"";
-    signal.style.transform = attr.shape === "rhombus"? "rotate(67.5deg) skewX(45deg) scaleY(cos(45deg))": "";
+    signal.style.transform = attr.shape === "rohmbus"? "rotate(67.5deg) skewX(45deg) scaleY(cos(45deg))": "";
     // position
     signal.style.position = "absolute";
     signal.style.left = attr?.coords[0] + "%";
     signal.style.top = attr?.coords[1] + "%";
 }
+/**
+ * @returns {void}
+ * @param {HTMLDivElement} popup
+ * @param {HTMLSpanElement} signal 
+ * @param {Object} attr
+ * @param {Object} 
+ */
+function addPopupStyles(popup, signal, attr) {
+    // position
+    const popUpLeft = signal.getBoundingClientRect().left - measure(popup, (element)=>element.clientWidth) / 2 - 8;
+    // rohmbus requires more space between itself and the popup
+    let popUpTop;
+    if (attr.position === "bottom") {
+        popUpTop = signal.getBoundingClientRect().bottom + 4;
+    } else {
+        // 40 is an arbitrary number that comes from testing
+        popUpTop = signal.getBoundingClientRect().top - measure(popup, (element)=>element.clientHeight) - 40;
+    }
+    console.log(popUpTop)
+    popup.style.zIndex = "999";
+    popup.style.position = "absolute";
+    popup.style.left = popUpLeft + "px";
+    popup.style.top = popUpTop + "px";
 
+    // font
+    popup.style.fontFamily = attr.font;
+
+    // display
+    popup.style.display = "none";
+
+    // border
+    popup.style.borderRadius = "5%";
+    popup.style.border = "4px solid black";
+
+    // color
+    popup.style.backgroundColor = "white";
+
+    // padding
+    popup.style.padding = "5px";
+}
+/**
+ * @returns {void}
+ * @param {HTMLElement} container 
+ * @param {Object} attr
+ */
+// function setUpImage360(container, attr) {
+//     const config = {
+//         title: "Render Arquitectura",
+//         type: "equirectangular",
+//         panorama: attr.image,
+//         autoload: true
+//     };
+
+//     pannellum.viewer(container, config);
+// }
 class SignalPopup extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({mode: "open"});        
         
-        const attributeNames = ["shape", "border", "padding", "coords", "color", "image", "is360"];
         // Object attribute | attribute value pairs
         const attrPredefined = {
+            shape: "",
             color: "grey",
-            border: "4px solid black",
+            border: "true",
             padding: "5",
             coords: "0,0",
+            title: "",
+            description: "",
             image: "",
-            is360: "false"
+            is360: "false",
+            height: "",
+            width: "",
+            textwidth: "",
+            font: "Sans-serif",
+            position: "bottom"
         };
+        const attributeNames = Object.getOwnPropertyNames(attrPredefined);
         // I was hoping this made passing parameters to functions easier
         const attr =
         attributeNames.reduce((ac, attrName) =>
-        ({...ac, [attrName] : this.getAttribute(attrName) || attrPredefined[attrName]}),{});
-        attr.coords = attr.coords.split(",");
+            ({...ac, [attrName] : this.getAttribute(attrName) || attrPredefined[attrName]}),{});
+        attr.coords = attr.coords?.split(",");
         
+        // POPUP
+        const popup = document.createElement("div");
+        // if (attr.is360 === "true") {
+        //     popup.style.height = attr.height + "px";
+        //     popup.style.width = attr.width + "px";
+        // } else 
+        
+        if (this.innerHTML === "") {
+            // Text elements of popup
+            const title = document.createElement("h4");
+            title.innerText = attr.title;
+            title.style.marginTop = "0px"
+            
+            const description = document.createElement("p");
+            description.innerText = attr.description;
+            description.style.marginBottom = "0px";
+            
+            const text = document.createElement("div");
+            text.style.display = "flex";
+            text.style.flexDirection = "column";
+            attr.textwidth !== ""? text.style.maxWidth = attr.textwidth + "px": null;
+            attr.textwidth !== ""? text.style.width = attr.textwidth + "px": null;
+            text.append(title, description);
+            
+            // Image
+            const image = document.createElement("img");
+            attr.image !== ""? image.setAttribute("src", attr.image): null;
+            attr.width !== ""? image.setAttribute("width", attr.width): null;
+            attr.height !== ""? image.setAttribute("height", attr.height): null;
+            
+            // Container
+            const container = document.createElement("div");
+            container.style.display = "flex";
+            container.style.flexDirection = "row";
+            container.style.gap = "10px";
+            container.append(text, image);
+            
+            // Append all to popup
+            popup.append(container);
+        } else {
+            popup.innerHTML = this.innerHTML;
+            this.innerHTML = "";
+        }
+
         // SIGNAL
         const signal = document.createElement("span");
         signal.addEventListener("click", (e) => {this.togglePopup(e)});
         addSignalStyles(signal, attr);
-
-
-        // POPUP
-        const popup = document.createElement("div");
         
-
-        this.shadowRoot.append(signal); //popup
+        this.shadowRoot.append(signal);
+        addPopupStyles(popup, signal, attr);
+        this.shadowRoot.append(popup);
     }
-
+    
     /**
      * @returns {void}
      * @param {MouseEvent} e 
      */
     togglePopup(e) {
-        // Hide current
-        currPopup?.classList.remove("active");
         const relatedPopup = this.shadowRoot.querySelector("div");
-        console.log(currPopup, relatedPopup)
+        // Hide current
+        if (typeof(currPopup) === typeof(relatedPopup)) {
+            currPopup.style.display = "none";
+        }
+
         // If its different signal show it
         if(relatedPopup !== currPopup) {
-            relatedPopup?.classList.add("active");
+            relatedPopup.style.display = "block";
+            currPopup = relatedPopup;
+        } else {
+            currPopup = undefined;
         }
-        currPopup = relatedPopup;
     }
 }
 
@@ -102,5 +228,5 @@ class ImageInteractive extends HTMLElement {
     }
 }
 
-customElements.define("signal-popup", SignalPopup);
 customElements.define("image-interactive", ImageInteractive);
+customElements.define("signal-popup", SignalPopup);
