@@ -24,53 +24,60 @@ function measure(element, cb) {
  * @param {HTMLSpanElement} signal 
  * @param {Object} attr 
  */
-function addSignalStyles(signal, attr) {
+function addSignalStyles(signal, {color, signalsize, border, shape, coords, icon}) {
     // cursor
     signal.style.cursor = "pointer";
-    // color
-    signal.style.backgroundColor = attr.color;
+    // background
+    if (icon === "") {
+        signal.style.backgroundColor = color;
+    } else {
+        signal.style.backgroundImage = "url(\"" + icon + "\")";
+        signal.style.backgroundSize = "cover";
+        signal.style.backgroundRepeat = "no-repeat";
+    }
     // padding
-    signal.style.padding = attr.padding + "px";
+    signal.style.padding = signalsize + "px";
     // border
-    signal.style.border = attr.border === "false"? "none": "4px solid black";
+    signal.style.border = border === "false"? "none": "4px solid black";
     // shape
-    signal.style.borderRadius = attr.shape === "circle"? "100%":"";
-    signal.style.transform = attr.shape === "rohmbus"? "rotate(67.5deg) skewX(45deg) scaleY(cos(45deg))": "";
+    signal.style.borderRadius = shape === "circle"? "100%":"";
+    signal.style.transform = shape === "rohmbus"? "rotate(67.5deg) skewX(45deg) scaleY(cos(45deg))": "";
     // position
     signal.style.position = "absolute";
-    signal.style.left = attr?.coords[0] + "%";
-    signal.style.top = attr?.coords[1] + "%";
+    signal.style.left = coords[0] + "%";
+    signal.style.top = coords[1] + "%";
 }
 /**
  * @returns {void}
  * @param {HTMLDivElement} popup
  * @param {HTMLSpanElement} signal 
  * @param {Object} attr
- * @param {HTMLImageElement} image 
+ * @param {HTMLImageElement} parentImage 
  */
-function addPopupStyles(popup, signal, attr, image) {
-    const imageWidth = parseFloat(image.width);
-    const imageHeight = parseFloat(image.height);
+function addPopupStyles(popup, parentImage, {coords, position, shape, font, padding}) {
+    const imageWidth = parseFloat(parentImage.width);
+    const imageHeight = parseFloat(parentImage.height);
     // position
-    const popUpLeft =  parseFloat(attr.coords[0]) * imageWidth/ 100 - measure(popup, (element)=>element.clientWidth) / 2;
+    const popUpLeft =  parseFloat(coords[0]) * imageWidth/ 100 - measure(popup, (element)=>element.clientWidth) / 2;
 
     // rohmbus requires more space between itself and the popup
     let popUpTop;
-    if (attr.position === "bottom") {
-        const offset = attr.shape === "rohmbus"? 50: 40;
-        popUpTop = parseFloat(attr.coords[1]) * imageHeight/ 100 + offset;
+    if (position === "bottom") {
+        const offset = shape === "rohmbus"? 50: 40;
+        popUpTop = parseFloat(coords[1]) * imageHeight/ 100 + offset;
         popup.style.top = popUpTop + "px";
     } else {
-        popUpTop = imageHeight - parseFloat(attr.coords[1]) * imageHeight/ 100 + 10;
+        popUpTop = imageHeight - parseFloat(coords[1]) * imageHeight/ 100 + 10;
         popup.style.bottom = popUpTop + "px";
     }
-    console.log(popUpTop, popUpLeft)
+
+    // position
     popup.style.zIndex = "999";
     popup.style.position = "absolute";
     popup.style.left = popUpLeft + "px";
 
     // font
-    popup.style.fontFamily = attr.font;
+    popup.style.fontFamily = font;
 
     // display
     popup.style.display = "none";
@@ -83,25 +90,23 @@ function addPopupStyles(popup, signal, attr, image) {
     popup.style.backgroundColor = "white";
 
     // padding
-    popup.style.padding = "5px";
+    popup.style.padding = padding + "px";
 }
-// /**
-//  * @returns {void}
-//  * @param {HTMLElement} container 
-//  * @param {Object} attr
-//  */
-// function setUpImage360(container, attr) {
-//     const config = {
-//         title: "Render Arquitectura",
-//         type: "equirectangular",
-//         panorama: attr.image,
-//         autoload: true
-//     };
-
-//     pannellum.viewer(container, config);
-// }
+/**
+ * @returns {HTMLIFrameElement}
+ * @param {HTMLElement} container 
+ * @param {Object} attr
+ */
+function setUpImage360({ image, height, width }) {
+    const iframe360 = document.createElement("iframe");
+    iframe360.setAttribute("src", image);
+    iframe360.setAttribute("height", height);
+    iframe360.setAttribute("width", width);
+    iframe360.setAttribute("allowfullscreen", "true");
+    return iframe360;
+}
 class SignalPopup extends HTMLElement {
-    constructor(parentImage) {
+    constructor() {
         super();
         this.attachShadow({mode: "open"});        
         
@@ -110,7 +115,7 @@ class SignalPopup extends HTMLElement {
             shape: "",
             color: "grey",
             border: "true",
-            padding: "5",
+            signalsize: "5",
             coords: "0,0",
             title: "",
             description: "",
@@ -120,7 +125,9 @@ class SignalPopup extends HTMLElement {
             width: "",
             textwidth: "",
             font: "Sans-serif",
-            position: "bottom"
+            position: "bottom",
+            padding: "5",
+            icon: ""
         };
         const attributeNames = Object.getOwnPropertyNames(attrPredefined);
         // I was hoping this made passing parameters to functions easier
@@ -131,12 +138,16 @@ class SignalPopup extends HTMLElement {
         
         // POPUP
         const popup = document.createElement("div");
-        // if (attr.is360 === "true") {
-        //     popup.style.height = attr.height + "px";
-        //     popup.style.width = attr.width + "px";
-        // } else 
-        
-        if (this.innerHTML === "") {
+        console.log(attr.is360 === "true")
+        if  (this.childNodes.length !== 0) {
+            popup.innerHTML = this.innerHTML;
+            this.innerHTML = "";
+        } else if(attr.is360 === "true") {
+            popup.style.height = attr.height + "px";
+            popup.style.width = attr.width + "px";
+            popup.style.overflow = "hidden";
+            popup.append(setUpImage360(attr));
+        } else {
             // Text elements of popup
             const title = document.createElement("h4");
             title.innerText = attr.title;
@@ -168,9 +179,6 @@ class SignalPopup extends HTMLElement {
             
             // Append all to popup
             popup.append(container);
-        } else {
-            popup.innerHTML = this.innerHTML;
-            this.innerHTML = "";
         }
 
         // SIGNAL
@@ -179,7 +187,7 @@ class SignalPopup extends HTMLElement {
         addSignalStyles(signal, attr);
         
         this.shadowRoot.append(signal);
-        addPopupStyles(popup, signal, attr, this.parentElement.children[0]);
+        addPopupStyles(popup, this.parentElement.children[0], attr);
         this.shadowRoot.append(popup);
     }
     
@@ -225,6 +233,8 @@ class ImageInteractive extends HTMLElement {
         if (this.hasAttribute("height")) {
             image.setAttribute("height", this.getAttribute("height"));
         }
+        image.setAttribute("draggable", false)
+        image.style.userSelect = "none";
         
         const signals = Array.from(this.getElementsByTagName("signal-popup"));
         imageWrapper.append(image, ...signals);
