@@ -46,24 +46,28 @@ function addSignalStyles(signal, attr) {
  * @param {HTMLDivElement} popup
  * @param {HTMLSpanElement} signal 
  * @param {Object} attr
- * @param {Object} 
+ * @param {HTMLImageElement} image 
  */
-function addPopupStyles(popup, signal, attr) {
+function addPopupStyles(popup, signal, attr, image) {
+    const imageWidth = parseFloat(image.width);
+    const imageHeight = parseFloat(image.height);
     // position
-    const popUpLeft = signal.getBoundingClientRect().left - measure(popup, (element)=>element.clientWidth) / 2 - 8;
+    const popUpLeft =  parseFloat(attr.coords[0]) * imageWidth/ 100 - measure(popup, (element)=>element.clientWidth) / 2;
+
     // rohmbus requires more space between itself and the popup
     let popUpTop;
     if (attr.position === "bottom") {
-        popUpTop = signal.getBoundingClientRect().bottom + 4;
+        const offset = attr.shape === "rohmbus"? 50: 40;
+        popUpTop = parseFloat(attr.coords[1]) * imageHeight/ 100 + offset;
+        popup.style.top = popUpTop + "px";
     } else {
-        // 40 is an arbitrary number that comes from testing
-        popUpTop = signal.getBoundingClientRect().top - measure(popup, (element)=>element.clientHeight) - 40;
+        popUpTop = imageHeight - parseFloat(attr.coords[1]) * imageHeight/ 100 + 10;
+        popup.style.bottom = popUpTop + "px";
     }
-    console.log(popUpTop)
+    console.log(popUpTop, popUpLeft)
     popup.style.zIndex = "999";
     popup.style.position = "absolute";
     popup.style.left = popUpLeft + "px";
-    popup.style.top = popUpTop + "px";
 
     // font
     popup.style.fontFamily = attr.font;
@@ -81,11 +85,11 @@ function addPopupStyles(popup, signal, attr) {
     // padding
     popup.style.padding = "5px";
 }
-/**
- * @returns {void}
- * @param {HTMLElement} container 
- * @param {Object} attr
- */
+// /**
+//  * @returns {void}
+//  * @param {HTMLElement} container 
+//  * @param {Object} attr
+//  */
 // function setUpImage360(container, attr) {
 //     const config = {
 //         title: "Render Arquitectura",
@@ -97,7 +101,7 @@ function addPopupStyles(popup, signal, attr) {
 //     pannellum.viewer(container, config);
 // }
 class SignalPopup extends HTMLElement {
-    constructor() {
+    constructor(parentImage) {
         super();
         this.attachShadow({mode: "open"});        
         
@@ -175,7 +179,7 @@ class SignalPopup extends HTMLElement {
         addSignalStyles(signal, attr);
         
         this.shadowRoot.append(signal);
-        addPopupStyles(popup, signal, attr);
+        addPopupStyles(popup, signal, attr, this.parentElement.children[0]);
         this.shadowRoot.append(popup);
     }
     
@@ -221,8 +225,8 @@ class ImageInteractive extends HTMLElement {
         if (this.hasAttribute("height")) {
             image.setAttribute("height", this.getAttribute("height"));
         }
+        
         const signals = Array.from(this.getElementsByTagName("signal-popup"));
-
         imageWrapper.append(image, ...signals);
         this.shadowRoot.append(imageWrapper);
     }
