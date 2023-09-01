@@ -1,4 +1,4 @@
-# IMAGENES INTERACTIVAS - DOCS
+# INTERACTIVE IMAGES - DOCS
 # <image-interactive\>
 TODO docs
 
