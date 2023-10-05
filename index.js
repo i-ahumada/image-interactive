@@ -52,7 +52,6 @@ function addPopupStyles(popup, parentImage, { coords, position, shape, font, pad
         popUpTop = (imageHeight + parseInt(signalsize) * 2) * 100 / imageHeight - parseFloat(coords[1]);
         popup.style.bottom = popUpTop + "%";
     }
-    console.log(popUpTop, popUpLeft);
     // position
     popup.style.zIndex = "999";
     popup.style.position = "absolute";
