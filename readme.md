@@ -1,6 +1,17 @@
 # INTERACTIVE IMAGES - DOCS
 # <image-interactive\>
-TODO docs
+This element serves the purpose of containing several `signal-popup` elements and the image that goes beneath them. _**The height and width values must be defined for proper functionality**_.
+
+## Attributes
+
+### # src
+Src is a _String_ value that has the source of the image that will be displayed. It functions the same way as the src attribute for the ´img´ element.
+
+### # height 
+Height is an _Integer_ value that sets the image height value in pixels.
+
+### # width
+Width is an _Integer_ value that sets the image width value in pixels.
 
 # <signal-popup\>
 This elements constitutes a single pair of a clickable element that triggers the appearence of a popup. It's functionality is that of the `SinalPopup` class defined in index.js. The most important thing to understand about this element are the attributes which are shared between the "signal" (clickable component of the element) and the "popup" (element connected to the signal that appears on signal click, for each attribute there are default values that prevent errors if the attribute isn't set. 
@@ -10,7 +21,7 @@ This elements constitutes a single pair of a clickable element that triggers the
 
 Popup can either be configured with the title description and image attributes or you can add html inside the `<signal-popup>` element and it will be treated as the inner html of the popup. If any html elements are written inside the `<signal-popup>` element it will render the html rather than what has been set through the attributes since custom html is of higher priority. Example:
 
-            <image-interactive>
+            <image-interactive ...>
                         <signal-popup title="This will not be rendered :(" image="./JohnCena.jpg">
                                     <h1>This will!</h1>
                         </signal-popup>
